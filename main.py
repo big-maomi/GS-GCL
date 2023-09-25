@@ -60,9 +60,10 @@ if __name__ == '__main__':
         'properties/overall.yaml',
         'properties/NCL.yaml'
     ]
+    args.dataset = 'ml-1m'
     if args.dataset in ['ml-1m', 'yelp', 'amazon-books', 'gowalla-merged', 'alibaba']:
         args.config_file_list.append(f'properties/{args.dataset}.yaml')
-    if args.config is not '':
+    if args.config != '':
         args.config_file_list.append(args.config)
 
     run_single_model(args)

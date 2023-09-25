@@ -37,11 +37,6 @@ class NCLTrainer(Trainer):
         self.eval_collector.data_collect(train_data)
 
         for epoch_idx in range(self.start_epoch, self.epochs):
-
-            # only differences from the original trainer
-            if epoch_idx % self.num_m_step == 0:
-                self.logger.info("Running E-step ! ")
-                self.model.e_step()
             # train
             training_start_time = time()
             train_loss = self._train_epoch(train_data, epoch_idx, show_progress=show_progress)
