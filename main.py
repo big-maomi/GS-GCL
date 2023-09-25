@@ -3,7 +3,8 @@ from logging import getLogger
 
 from recbole.config import Config
 from recbole.data import create_dataset, data_preparation
-from recbole.utils import init_logger, init_seed, set_color
+from recbole.utils import init_seed, set_color
+from local_logger import init_logger
 
 from ncl import NCL
 from trainer import NCLTrainer
@@ -18,13 +19,20 @@ def run_single_model(args):
     )
     init_seed(config['seed'], config['reproducibility'])
 
-    if args.__contains__('alpha'):
-        config['alpha'] = args.alpha
-
-    if args.__contains__('ssl_temp'):
-        config['ssl_temp'] = args.ssl_temp
-
     config['loss_type'] = args.loss_type
+
+    if config['loss_type'] == 2:
+        config['train_type'] = 'ordinary'
+    else :
+        config['train_type'] = 'loss_type'
+
+    if args.alpha is not None:
+        config['alpha'] = args.alpha
+        config['train_type'] = 'alpha'
+    if args.ssl_temp is not None:
+        config['ssl_temp'] = args.ssl_temp
+        config['train_type'] = 'ssl_temp'
+
     # logger initialization
     init_logger(config)
     logger = getLogger()
