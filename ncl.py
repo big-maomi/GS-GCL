@@ -50,6 +50,7 @@ class NCL(GeneralRecommender):
         self.user_embedding = torch.nn.Embedding(num_embeddings=self.n_users, embedding_dim=self.latent_dim)
         self.item_embedding = torch.nn.Embedding(num_embeddings=self.n_items, embedding_dim=self.latent_dim)
 
+        self.loss_type = config['loss_type']
         self.mf_loss = BPRLoss()
         self.reg_loss = EmbLoss()
 
@@ -302,6 +303,14 @@ class NCL(GeneralRecommender):
         return ssl_loss
 
     def calculate_loss(self, interaction):
+        if self.loss_type == 2:
+            return self.calculate_loss_2(interaction)
+        if self.loss_type == 0:
+            return self.calculate_loss_0(interaction)
+        if self.loss_type == 1:
+            return self.calculate_loss_1(interaction)
+
+    def calculate_loss_0(self, interaction):
         # clear the storage variable when training
         if self.restore_user_e is not None or self.restore_item_e is not None:
             self.restore_user_e, self.restore_item_e = None, None
@@ -316,7 +325,75 @@ class NCL(GeneralRecommender):
         context_embedding = embeddings_list[self.hyper_layers * 2]
 
         ssl_loss = self.ssl_layer_loss(context_embedding, center_embedding, user, pos_item)
-        # proto_loss = self.ProtoNCE_loss(center_embedding, user, pos_item)
+
+        u_embeddings = user_all_embeddings[user]
+        pos_embeddings = item_all_embeddings[pos_item]
+        neg_embeddings = item_all_embeddings[neg_item]
+
+        # calculate BPR Loss
+        pos_scores = torch.mul(u_embeddings, pos_embeddings).sum(dim=1)
+        neg_scores = torch.mul(u_embeddings, neg_embeddings).sum(dim=1)
+
+        mf_loss = self.mf_loss(pos_scores, neg_scores)
+
+        u_ego_embeddings = self.user_embedding(user)
+        pos_ego_embeddings = self.item_embedding(pos_item)
+        neg_ego_embeddings = self.item_embedding(neg_item)
+
+        reg_loss = self.reg_loss(u_ego_embeddings, pos_ego_embeddings, neg_ego_embeddings)
+
+        return mf_loss + self.reg_weight * reg_loss, ssl_loss
+
+
+    def calculate_loss_1(self, interaction):
+        # clear the storage variable when training
+        if self.restore_user_e is not None or self.restore_item_e is not None:
+            self.restore_user_e, self.restore_item_e = None, None
+
+        user = interaction[self.USER_ID]
+        pos_item = interaction[self.ITEM_ID]
+        neg_item = interaction[self.NEG_ITEM_ID]
+
+        user_all_embeddings, item_all_embeddings, embeddings_list = self.forward()
+
+        center_embedding = embeddings_list[0]
+
+        neighbor_loss = self.neighbor_loss(center_embedding, user, pos_item)
+
+        u_embeddings = user_all_embeddings[user]
+        pos_embeddings = item_all_embeddings[pos_item]
+        neg_embeddings = item_all_embeddings[neg_item]
+
+        # calculate BPR Loss
+        pos_scores = torch.mul(u_embeddings, pos_embeddings).sum(dim=1)
+        neg_scores = torch.mul(u_embeddings, neg_embeddings).sum(dim=1)
+
+        mf_loss = self.mf_loss(pos_scores, neg_scores)
+
+        u_ego_embeddings = self.user_embedding(user)
+        pos_ego_embeddings = self.item_embedding(pos_item)
+        neg_ego_embeddings = self.item_embedding(neg_item)
+
+        reg_loss = self.reg_loss(u_ego_embeddings, pos_ego_embeddings, neg_ego_embeddings)
+
+        return mf_loss + self.reg_weight * reg_loss, neighbor_loss
+
+
+    def calculate_loss_2(self, interaction):
+        # clear the storage variable when training
+        if self.restore_user_e is not None or self.restore_item_e is not None:
+            self.restore_user_e, self.restore_item_e = None, None
+
+        user = interaction[self.USER_ID]
+        pos_item = interaction[self.ITEM_ID]
+        neg_item = interaction[self.NEG_ITEM_ID]
+
+        user_all_embeddings, item_all_embeddings, embeddings_list = self.forward()
+
+        center_embedding = embeddings_list[0]
+        context_embedding = embeddings_list[self.hyper_layers * 2]
+
+        ssl_loss = self.ssl_layer_loss(context_embedding, center_embedding, user, pos_item)
         neighbor_loss = self.neighbor_loss(center_embedding, user, pos_item)
 
         u_embeddings = user_all_embeddings[user]
@@ -336,8 +413,6 @@ class NCL(GeneralRecommender):
         reg_loss = self.reg_loss(u_ego_embeddings, pos_ego_embeddings, neg_ego_embeddings)
 
         return mf_loss + self.reg_weight * reg_loss, ssl_loss, neighbor_loss
-        # return mf_loss + self.reg_weight * reg_loss, 0 * ssl_loss, neighbor_loss
-        # return mf_loss + self.reg_weight * reg_loss, neighbor_loss
 
     def predict(self, interaction):
         user = interaction[self.USER_ID]

@@ -17,7 +17,7 @@ def run_single_model(args):
         config_file_list=args.config_file_list
     )
     init_seed(config['seed'], config['reproducibility'])
-
+    config['loss_type'] = args.loss_type
     # logger initialization
     init_logger(config)
     logger = getLogger()
@@ -44,7 +44,6 @@ def run_single_model(args):
 
     # model evaluation
     test_result = trainer.evaluate(test_data, load_best_model=True, show_progress=config['show_progress'])
-
     logger.info(set_color('best valid ', 'yellow') + f': {best_valid_result}')
     logger.info(set_color('test result', 'yellow') + f': {test_result}')
 
@@ -53,6 +52,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, default='yelp', help='The datasets can be: ml-1m, yelp, amazon-books, gowalla-merged, alibaba.')
     parser.add_argument('--config', type=str, default='', help='External config file name.')
+    parser.add_argument('--loss_type', type=int, default=2, help='External config file name.')
+
     args, _ = parser.parse_known_args()
 
     # Config files
@@ -61,6 +62,7 @@ if __name__ == '__main__':
         'properties/NCL.yaml'
     ]
     args.dataset = 'ml-1m'
+
     if args.dataset in ['ml-1m', 'yelp', 'amazon-books', 'gowalla-merged', 'alibaba']:
         args.config_file_list.append(f'properties/{args.dataset}.yaml')
     if args.config != '':
