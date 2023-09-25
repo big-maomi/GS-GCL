@@ -17,6 +17,13 @@ def run_single_model(args):
         config_file_list=args.config_file_list
     )
     init_seed(config['seed'], config['reproducibility'])
+
+    if args.__contains__('alpha'):
+        config['alpha'] = args.alpha
+
+    if args.__contains__('ssl_temp'):
+        config['ssl_temp'] = args.ssl_temp
+
     config['loss_type'] = args.loss_type
     # logger initialization
     init_logger(config)
@@ -52,7 +59,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, default='ml-1m', help='The datasets can be: ml-1m, yelp, amazon-books, gowalla-merged, alibaba.')
     parser.add_argument('--config', type=str, default='', help='External config file name.')
-    parser.add_argument('--loss_type', type=int, default=2, help='External config file name.')
+    parser.add_argument('--loss_type', type=int, default=2, help='type 0 : ssl, type 1 : neighbor, type 2 : all')
+    parser.add_argument('--alpha', type=float, help='Coefficient alpha between 2 losses of structure loss.')
+    parser.add_argument('--ssl_temp', type=float, help='Temperature')
 
     args, _ = parser.parse_known_args()
 

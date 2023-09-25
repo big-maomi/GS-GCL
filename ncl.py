@@ -74,17 +74,13 @@ class NCL(GeneralRecommender):
             score = torch.Tensor(score).long()
             return score
 
-
+        print("calculate row neighbor....")
         neighbors = [0]
-        # row = np.array([0, 3, 1, 0])
-        # col = np.array([0, 1, 1, 2])
-        # data = np.array([1, 1, 1, 1])
-        # matrix = coo_matrix((data, (row, col)))
+
         row_sum = np.sqrt(matrix.sum(1)) + 1e-4
 
         start = time.time()
         for i in range(1,matrix.shape[0]):
-        # for i in range(1,100):
             row_i = matrix.getrow(i)
             cosList = matrix.dot(row_i.transpose())
             cosList = cosList.__div__(row_sum)
@@ -112,17 +108,11 @@ class NCL(GeneralRecommender):
                 score = [int(line.rstrip('\n')) for line in f]
             score = torch.Tensor(score).long()
             return score
-
+        print("calculate col neighbor....")
         neighbors = [0]
-        # row = np.array([0, 3, 1, 0])
-        # col = np.array([0, 1, 1, 2])
-        # data = np.array([1, 1, 1, 1])
-        # matrix = coo_matrix((data, (row, col)))
         col_sum = np.sqrt(matrix.sum(0)) + 1e-4
         start = time.time()
         for i in range(1,matrix.shape[1]):
-        # for i in range(1,100):
-            # 6000 * 1
             col_i = matrix.getcol(i)
             cosList = col_i.transpose().dot(matrix)
             cosList = cosList.__div__(col_sum)
@@ -136,7 +126,6 @@ class NCL(GeneralRecommender):
             for s in neighbors:
                 f.write(str(s) + '\n')
         neighbors = torch.Tensor(neighbors)
-
 
         print("saving col neighbor")
 
