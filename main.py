@@ -50,7 +50,7 @@ def run_single_model(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset', type=str, default='yelp', help='The datasets can be: ml-1m, yelp, amazon-books, gowalla-merged, alibaba.')
+    parser.add_argument('--dataset', type=str, default='ml-1m', help='The datasets can be: ml-1m, yelp, amazon-books, gowalla-merged, alibaba.')
     parser.add_argument('--config', type=str, default='', help='External config file name.')
     parser.add_argument('--loss_type', type=int, default=2, help='External config file name.')
 
@@ -61,7 +61,6 @@ if __name__ == '__main__':
         'properties/overall.yaml',
         'properties/NCL.yaml'
     ]
-    args.dataset = 'ml-1m'
 
     if args.dataset in ['ml-1m', 'yelp', 'amazon-books', 'gowalla-merged', 'alibaba']:
         args.config_file_list.append(f'properties/{args.dataset}.yaml')
