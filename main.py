@@ -6,14 +6,14 @@ from recbole.data import create_dataset, data_preparation
 from recbole.utils import init_seed, set_color
 from local_logger import init_logger
 
-from ncl import NCL
+from dncl import DNCL
 from trainer import NCLTrainer
 
 
 def run_single_model(args):
     # configurations initialization
     config = Config(
-        model=NCL,
+        model=DNCL,
         dataset=args.dataset, 
         config_file_list=args.config_file_list
     )
@@ -21,21 +21,26 @@ def run_single_model(args):
 
     config['loss_type'] = args.loss_type
 
-    if config['loss_type'] == 2:
-        config['train_type'] = 'ordinary'
-    else :
-        config['train_type'] = 'loss_type'
+    config['train_type'] = []
+
+    if config['loss_type'] != 2:
+        config['train_type'].append('loss_type')
 
     if args.alpha is not None:
         config['alpha'] = args.alpha
-        config['train_type'] = 'alpha'
+        config['train_type'].append('alpha')
     if args.ssl_temp is not None:
         config['ssl_temp'] = args.ssl_temp
-        config['train_type'] = 'ssl_temp'
+        config['train_type'].append('ssl_temp')
+
     if args.epochs is not None:
         config['epochs'] = args.epochs
+        config['train_type'].append('epochs')
+
     if args.k is not None:
         config['k'] = args.k
+        config['train_type'].append('k')
+
     # logger initialization
     init_logger(config)
     logger = getLogger()
@@ -49,7 +54,7 @@ def run_single_model(args):
     train_data, valid_data, test_data = data_preparation(config, dataset)
 
     # model loading and initialization
-    model = NCL(config, train_data.dataset).to(config['device'])
+    model = DNCL(config, train_data.dataset).to(config['device'])
     logger.info(model)
 
     # trainer loading and initialization
@@ -74,7 +79,7 @@ if __name__ == '__main__':
     parser.add_argument('--alpha', type=float, help='Coefficient alpha between 2 losses of structure loss.')
     parser.add_argument('--ssl_temp', type=float, help='Temperature')
     parser.add_argument('--epochs', type=int, help='Epochs')
-    parser.add_argument('--k', default=3, type=int, help='k neighbors')
+    parser.add_argument('--k', default=1, type=int, help='k neighbors')
 
     args, _ = parser.parse_known_args()
 
