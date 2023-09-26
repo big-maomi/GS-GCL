@@ -82,7 +82,7 @@ def init_logger(config):
     # logfilename = "{}/{}-{}-{}-{}.log".format(
     #     config["model"], config["model"], config["dataset"], get_local_time(), md5
     # )
-    logfilename = get_log_file_name(config)
+    logfilename = get_model_file_name(config) + 'log'
     logfilepath = os.path.join(LOGROOT, logfilename)
 
     filefmt = "%(asctime)-15s %(levelname)s  %(message)s"
@@ -117,16 +117,48 @@ def init_logger(config):
 
     logging.basicConfig(level=level, handlers=[sh, fh])
 
-def get_log_file_name(config):
+def get_model_file_name(config):
     logfilename = ''
     config_str = "".join([str(key) for key in config.final_config_dict.values()])
     md5 = hashlib.md5(config_str.encode(encoding="utf-8")).hexdigest()[:6]
-    if config['train_type'] == 'ordinary':
-        logfilename = "{}/{}-{}-{}-{}-{}.log".format(
-            config["model"], config["model"], config["dataset"],config['train_type'],get_local_time(), md5
+
+    if len(config['train_type']) == 0:
+        logfilename = "{}/{}-{}-{}-{}-{}".format(
+            config["model"], config["model"], config["dataset"],'ordinary',get_local_time(), md5
         )
     else:
-        logfilename = "{}/{}-{}-{}-{}-{}-{}.log".format(
-            config["model"], config["model"], config["dataset"], config['train_type'], config[config['train_type']], get_local_time(), md5
+        info = ''
+        for type in config['train_type']:
+            info += type
+            info += '-'
+            info += str(config[type])
+            info += '-'
+
+
+        logfilename = "{}/{}-{}-{}{}-{}".format(
+            config["model"], config["model"], config["dataset"], info, get_local_time(), md5
+        )
+    return logfilename
+
+def get_model_file_name_without_dir(config):
+    logfilename = ''
+    config_str = "".join([str(key) for key in config.final_config_dict.values()])
+    md5 = hashlib.md5(config_str.encode(encoding="utf-8")).hexdigest()[:6]
+
+    if len(config['train_type']) == 0:
+        logfilename = "{}-{}-{}-{}".format(
+            config["dataset"],'ordinary',get_local_time(), md5
+        )
+    else:
+        info = ''
+        for type in config['train_type']:
+            info += type
+            info += '-'
+            info += str(config[type])
+            info += '-'
+
+
+        logfilename = "{}-{}{}-{}".format(
+            config["dataset"], info, get_local_time(), md5
         )
     return logfilename

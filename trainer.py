@@ -5,13 +5,16 @@ from tqdm import tqdm
 
 from recbole.trainer import Trainer
 from recbole.utils import early_stopping, dict2str, set_color, get_gpu_usage
+import os
+import local_logger
 
 
 class NCLTrainer(Trainer):
 
     def __init__(self, config, model):
         super(NCLTrainer, self).__init__(config, model)
-
+        saved_model_file = "{}-{}.pth".format(self.config["model"], local_logger.get_model_file_name_without_dir(config))
+        self.saved_model_file = os.path.join(self.checkpoint_dir, saved_model_file)
         self.num_m_step = config['m_step']
         assert self.num_m_step is not None
 
