@@ -29,8 +29,11 @@ class NCL(GeneralRecommender):
         self.interaction_matrix = dataset.inter_matrix(form='coo').astype(np.float32)
 
         self.dataset_name = dataset.dataset_name
-        self.user_neighbor = self.getRowNeighbors(self.interaction_matrix).long().to(self.device)
-        self.item_neighbor = self.getColNeighbors(self.interaction_matrix).long().to(self.device)
+        self.user_neighbor = self.getRowNeighbor(self.interaction_matrix).long().to(self.device)
+        self.item_neighbor = self.getColNeighbor(self.interaction_matrix).long().to(self.device)
+
+        self.user_k_neighbor = self.getRowNeighbors(self.interaction_matrix).long().to(self.device)
+        self.item_k_neighbor = self.getColNeighbors(self.interaction_matrix).long().to(self.device)
 
         # load parameters info
         self.latent_dim = config['embedding_size']  # int type: the embedding size of the base model
@@ -44,7 +47,7 @@ class NCL(GeneralRecommender):
         self.alpha = config['alpha']
 
         self.proto_reg = config['proto_reg']
-        self.k = config['num_clusters']
+        self.k = config['k']
 
         # define layers and loss
         self.user_embedding = torch.nn.Embedding(num_embeddings=self.n_users, embedding_dim=self.latent_dim)
@@ -65,7 +68,7 @@ class NCL(GeneralRecommender):
         self.other_parameter_name = ['restore_user_e', 'restore_item_e']
 
 
-    def getRowNeighbors(self,matrix):
+    def getRowNeighbor(self,matrix):
         fileName = "neighbors/" + self.dataset_name + "-row.txt"
         if(os.path.exists(fileName)):
             print("loading row neighbor")
@@ -99,7 +102,7 @@ class NCL(GeneralRecommender):
 
         return neighbors
 
-    def getColNeighbors(self,matrix):
+    def getColNeighbor(self,matrix):
         fileName = "neighbors/" + self.dataset_name + "-col.txt"
 
         if(os.path.exists(fileName)):
@@ -131,8 +134,74 @@ class NCL(GeneralRecommender):
 
         return neighbors;
 
+    def getRowNeighbors(self,matrix):
+        fileName = "K_neighbors/" + self.dataset_name + "-row.csv"
 
+        if(os.path.exists(fileName)):
+            print("loading col neighbor")
+            neighbors = np.loadtxt(fileName, delimiter=',')
+            neighbors = torch.Tensor(neighbors).long()
+            return neighbors
 
+        print("calculate row neighbor....")
+        neighbors = np.zeros([matrix.shape[0],10],dtype=int)
+
+        row_sum = np.sqrt(matrix.sum(1)) + 1e-4
+
+        start = time.time()
+        for i in range(1,matrix.shape[0]):
+            row_i = matrix.getrow(i)
+            cosList = matrix.dot(row_i.transpose())
+            cosList = cosList.__div__(row_sum)
+            cosList[i][0] = 0
+
+            for j in range(10):
+                res = cosList.argmax(0).item()
+                cosList[res][0] = 0
+                neighbors[i][j] = res
+
+        end = time.time()
+        print("cal row neighbor cost time: " +  str(end-start))
+
+        print("saving row neighbor")
+
+        np.savetxt(fileName, neighbors, delimiter=',')
+        neighbors = torch.Tensor(neighbors)
+        return neighbors
+
+    def getColNeighbors(self, matrix):
+        # fileName = "neighbors/" + self.dataset_name + "-col.txt"
+        fileName = "K_neighbors/" + self.dataset_name + "-col.csv"
+
+        if (os.path.exists(fileName)):
+            print("loading col neighbors")
+            neighbors = np.loadtxt(fileName, delimiter=',')
+            neighbors = torch.Tensor(neighbors).long()
+            return neighbors
+
+        print("calculate col neighbors....")
+        neighbors = np.zeros([matrix.shape[1], 10], dtype=int)
+
+        col_sum = np.sqrt(matrix.sum(0)) + 1e-4
+        start = time.time()
+        for i in range(1, matrix.shape[1]):
+            col_i = matrix.getcol(i)
+            cosList = col_i.transpose().dot(matrix)
+            cosList = cosList.__div__(col_sum)
+            cosList = cosList.transpose()
+            cosList[i][0] = 0
+            for j in range(10):
+                res = cosList.argmax(0).item()
+                cosList[res][0] = 0
+                neighbors[i][j] = res
+
+        end = time.time()
+        print("cal col neighbor cost time: " + str(end - start))
+
+        np.savetxt(fileName, neighbors, delimiter=',')
+        print("saving col neighbor")
+        neighbors = torch.Tensor(neighbors)
+        return neighbors;
 
     def get_norm_adj_mat(self):
         r"""Get the normalized interaction matrix of users and items.
@@ -194,35 +263,6 @@ class NCL(GeneralRecommender):
         user_all_embeddings, item_all_embeddings = torch.split(lightgcn_all_embeddings, [self.n_users, self.n_items])
         return user_all_embeddings, item_all_embeddings, embeddings_list
 
-    def ProtoNCE_loss(self, node_embedding, user, item):
-        user_embeddings_all, item_embeddings_all = torch.split(node_embedding, [self.n_users, self.n_items])
-
-        user_embeddings = user_embeddings_all[user]     # [B, e]
-        norm_user_embeddings = F.normalize(user_embeddings)
-
-        user2cluster = self.user_2cluster[user]     # [B,]
-        user2centroids = self.user_centroids[user2cluster]   # [B, e]
-        pos_score_user = torch.mul(norm_user_embeddings, user2centroids).sum(dim=1)
-        pos_score_user = torch.exp(pos_score_user / self.ssl_temp)
-        ttl_score_user = torch.matmul(norm_user_embeddings, self.user_centroids.transpose(0, 1))
-        ttl_score_user = torch.exp(ttl_score_user / self.ssl_temp).sum(dim=1)
-
-        proto_nce_loss_user = -torch.log(pos_score_user / ttl_score_user).sum()
-
-        item_embeddings = item_embeddings_all[item]
-        norm_item_embeddings = F.normalize(item_embeddings)
-
-        item2cluster = self.item_2cluster[item]  # [B, ]
-        item2centroids = self.item_centroids[item2cluster]  # [B, e]
-        pos_score_item = torch.mul(norm_item_embeddings, item2centroids).sum(dim=1)
-        pos_score_item = torch.exp(pos_score_item / self.ssl_temp)
-        ttl_score_item = torch.matmul(norm_item_embeddings, self.item_centroids.transpose(0, 1))
-        ttl_score_item = torch.exp(ttl_score_item / self.ssl_temp).sum(dim=1)
-        proto_nce_loss_item = -torch.log(pos_score_item / ttl_score_item).sum()
-
-        proto_nce_loss = self.proto_reg * (proto_nce_loss_user + proto_nce_loss_item)
-        return proto_nce_loss
-
     def neighbor_loss(self, node_embedding, user, item):
 
         user_embeddings_all, item_embeddings_all = torch.split(node_embedding, [self.n_users, self.n_items])
@@ -233,12 +273,29 @@ class NCL(GeneralRecommender):
         user_embeddings = user_embeddings_all[user]     # [B, e]
         norm_user_embeddings = F.normalize(user_embeddings)
 
-        userNeighbor = self.user_neighbor[user]     # [B,]
-        user_neighbor_embeddings = user_embeddings_all[userNeighbor]   # [B, e]
-        norm_user_neighbor_embeddings = F.normalize(user_neighbor_embeddings)
+        userNeighbors = self.user_k_neighbor[user]     # [B,]
 
-        pos_score_user = torch.mul(norm_user_embeddings, norm_user_neighbor_embeddings).sum(dim=1)
+        pos_score_user_list = []
+
+        for i in range(self.k):
+              # [B,]
+            indies = userNeighbors[:,i]
+            user_neighbor_embeddings = user_embeddings_all[indies]
+            norm_user_neighbor_embeddings = F.normalize(user_neighbor_embeddings)
+            pos_score_user = torch.mul(norm_user_embeddings, norm_user_neighbor_embeddings).sum(dim=1)
+            pos_score_user_list.append(pos_score_user)
+
+        pos_score_user = torch.stack(pos_score_user_list, dim=1)
+        pos_score_user = torch.mean(pos_score_user, dim=1)
+
+
+        # user_neighbor_embeddings = user_embeddings_all[userNeighbor]   # [B, e]
+        # norm_user_neighbor_embeddings = F.normalize(user_neighbor_embeddings)
+        #
+        # pos_score_user = torch.mul(norm_user_embeddings, norm_user_neighbor_embeddings).sum(dim=1)
+
         pos_score_user = torch.exp(pos_score_user / self.ssl_temp)
+
         ttl_score_user = torch.matmul(norm_user_embeddings, norm_all_user_emb.transpose(0, 1))
         ttl_score_user = torch.exp(ttl_score_user / self.ssl_temp).sum(dim=1)
 
@@ -333,7 +390,6 @@ class NCL(GeneralRecommender):
 
         return mf_loss + self.reg_weight * reg_loss, ssl_loss
 
-
     def calculate_loss_1(self, interaction):
         # clear the storage variable when training
         if self.restore_user_e is not None or self.restore_item_e is not None:
@@ -366,7 +422,6 @@ class NCL(GeneralRecommender):
         reg_loss = self.reg_loss(u_ego_embeddings, pos_ego_embeddings, neg_ego_embeddings)
 
         return mf_loss + self.reg_weight * reg_loss, neighbor_loss
-
 
     def calculate_loss_2(self, interaction):
         # clear the storage variable when training
@@ -431,3 +486,9 @@ if __name__ == '__main__':
     fileName = 'neighbors/amazon-books-col.txt'
     if os.path.exists(fileName):
         print(True)
+    import numpy as np
+
+    arr = np.empty((2, 3), dtype=int)
+    print(arr)
+    np.savetxt('col.csv',arr,fmt='d%',delimiter=',')
+    a = np.loadtxt('col.csv',delimiter=',')

@@ -34,7 +34,8 @@ def run_single_model(args):
         config['train_type'] = 'ssl_temp'
     if args.epochs is not None:
         config['epochs'] = args.epochs
-
+    if args.k is not None:
+        config['k'] = args.k
     # logger initialization
     init_logger(config)
     logger = getLogger()
@@ -73,6 +74,7 @@ if __name__ == '__main__':
     parser.add_argument('--alpha', type=float, help='Coefficient alpha between 2 losses of structure loss.')
     parser.add_argument('--ssl_temp', type=float, help='Temperature')
     parser.add_argument('--epochs', type=int, help='Epochs')
+    parser.add_argument('--k', default=3, type=int, help='k neighbors')
 
     args, _ = parser.parse_known_args()
 

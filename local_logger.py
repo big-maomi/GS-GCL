@@ -122,11 +122,11 @@ def get_log_file_name(config):
     config_str = "".join([str(key) for key in config.final_config_dict.values()])
     md5 = hashlib.md5(config_str.encode(encoding="utf-8")).hexdigest()[:6]
     if config['train_type'] == 'ordinary':
-        logfilename = "{}/{}-{}-{}-{}-{}.log".format(
-            config["model"], config["model"], config["dataset"],config['train_type'],get_local_time(), md5
+        logfilename = "{}/{}-{}-{}-{}-{}-{}.log".format(
+            config["model"], config["model"], config["dataset"],config['train_type'],'k-' + str(config['k']),get_local_time(), md5
         )
     else:
-        logfilename = "{}/{}-{}-{}-{}-{}-{}.log".format(
-            config["model"], config["model"], config["dataset"], config['train_type'], config[config['train_type']], get_local_time(), md5
+        logfilename = "{}/{}-{}-{}-{}-{}-{}-{}.log".format(
+            config["model"], config["model"], config["dataset"], config['train_type'], config[config['train_type']],'k_' + config['k'], get_local_time(), md5
         )
     return logfilename
