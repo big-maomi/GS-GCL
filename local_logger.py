@@ -82,7 +82,7 @@ def init_logger(config):
     # logfilename = "{}/{}-{}-{}-{}.log".format(
     #     config["model"], config["model"], config["dataset"], get_local_time(), md5
     # )
-    logfilename = get_model_file_name(config) + 'log'
+    logfilename = get_model_file_name(config) + '.log'
     logfilepath = os.path.join(LOGROOT, logfilename)
 
     filefmt = "%(asctime)-15s %(levelname)s  %(message)s"
