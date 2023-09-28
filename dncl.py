@@ -257,7 +257,7 @@ class DNCL(GeneralRecommender):
         ttl_score_item = torch.exp(ttl_score_item / self.ssl_temp).sum(dim=1)
         proto_nce_loss_item = -torch.log(pos_score_item / ttl_score_item).sum()
 
-        proto_nce_loss = self.proto_reg * (self.alpha * proto_nce_loss_user +  (1.0 - self.alpha) * proto_nce_loss_item)
+        proto_nce_loss = self.proto_reg * (proto_nce_loss_user +  self.alpha * proto_nce_loss_item)
         return proto_nce_loss
 
     def ssl_layer_loss(self, current_embedding, previous_embedding, user, item):
@@ -288,7 +288,7 @@ class DNCL(GeneralRecommender):
 
         ssl_loss_item = -torch.log(pos_score_item / ttl_score_item).sum()
 
-        ssl_loss = self.ssl_reg * (self.alpha * ssl_loss_user + (1.0 - self.alpha) * ssl_loss_item)
+        ssl_loss = self.ssl_reg * (ssl_loss_user + self.alpha * ssl_loss_item)
         return ssl_loss
 
     def calculate_loss(self, interaction):
