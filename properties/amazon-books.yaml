@@ -12,3 +12,4 @@ ssl_reg: 1e-6
 alpha: 0.8
 proto_reg: 1e-7
 num_clusters: 2000
+epochs: 400
