@@ -7,6 +7,7 @@ ssl_reg: 1e-7
 hyper_layers: 1
 
 alpha: 1
+beta: 1
 
 proto_reg: 8e-8
 num_clusters: 1000
