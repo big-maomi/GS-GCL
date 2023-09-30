@@ -72,16 +72,10 @@ def init_logger(config):
         >>> logger.info(train_result)
     """
     init(autoreset=True)
-    LOGROOT = "./log/"
-    dir_name = os.path.dirname(LOGROOT)
-    ensure_dir(dir_name)
-    model_name = os.path.join(dir_name, config["model"])
-    ensure_dir(model_name)
-    # config_str = "".join([str(key) for key in config.final_config_dict.values()])
-    # md5 = hashlib.md5(config_str.encode(encoding="utf-8")).hexdigest()[:6]
-    # logfilename = "{}/{}-{}-{}-{}.log".format(
-    #     config["model"], config["model"], config["dataset"], get_local_time(), md5
-    # )
+    LOGROOT = "./log/" + config['dataset'] + "/"
+    if not os.path.exists(LOGROOT):
+        os.mkdir(LOGROOT)
+
     logfilename = get_model_file_name(config) + '.log'
     logfilepath = os.path.join(LOGROOT, logfilename)
 
@@ -123,8 +117,8 @@ def get_model_file_name(config):
     md5 = hashlib.md5(config_str.encode(encoding="utf-8")).hexdigest()[:6]
 
     if len(config['train_type']) == 0:
-        logfilename = "{}/{}-{}-{}-{}-{}".format(
-            config["model"], config["model"], config["dataset"],'ordinary',get_local_time(), md5
+        logfilename = "{}-{}-{}-{}".format(
+            config["dataset"],'ordinary',get_local_time(), md5
         )
     else:
         info = ''
@@ -135,8 +129,8 @@ def get_model_file_name(config):
             info += '-'
 
 
-        logfilename = "{}/{}-{}-{}{}-{}".format(
-            config["model"], config["model"], config["dataset"], info, get_local_time(), md5
+        logfilename = "{}-{}{}-{}".format(
+            config["dataset"], info, get_local_time(), md5
         )
     return logfilename
 
