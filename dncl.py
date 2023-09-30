@@ -42,6 +42,7 @@ class DNCL(GeneralRecommender):
         self.hyper_layers = config['hyper_layers']
 
         self.alpha = config['alpha']
+        self.beta = config['beta']
 
         self.proto_reg = config['proto_reg']
         self.k = config['num_clusters']
@@ -194,34 +195,6 @@ class DNCL(GeneralRecommender):
         user_all_embeddings, item_all_embeddings = torch.split(lightgcn_all_embeddings, [self.n_users, self.n_items])
         return user_all_embeddings, item_all_embeddings, embeddings_list
 
-    def ProtoNCE_loss(self, node_embedding, user, item):
-        user_embeddings_all, item_embeddings_all = torch.split(node_embedding, [self.n_users, self.n_items])
-
-        user_embeddings = user_embeddings_all[user]     # [B, e]
-        norm_user_embeddings = F.normalize(user_embeddings)
-
-        user2cluster = self.user_2cluster[user]     # [B,]
-        user2centroids = self.user_centroids[user2cluster]   # [B, e]
-        pos_score_user = torch.mul(norm_user_embeddings, user2centroids).sum(dim=1)
-        pos_score_user = torch.exp(pos_score_user / self.ssl_temp)
-        ttl_score_user = torch.matmul(norm_user_embeddings, self.user_centroids.transpose(0, 1))
-        ttl_score_user = torch.exp(ttl_score_user / self.ssl_temp).sum(dim=1)
-
-        proto_nce_loss_user = -torch.log(pos_score_user / ttl_score_user).sum()
-
-        item_embeddings = item_embeddings_all[item]
-        norm_item_embeddings = F.normalize(item_embeddings)
-
-        item2cluster = self.item_2cluster[item]  # [B, ]
-        item2centroids = self.item_centroids[item2cluster]  # [B, e]
-        pos_score_item = torch.mul(norm_item_embeddings, item2centroids).sum(dim=1)
-        pos_score_item = torch.exp(pos_score_item / self.ssl_temp)
-        ttl_score_item = torch.matmul(norm_item_embeddings, self.item_centroids.transpose(0, 1))
-        ttl_score_item = torch.exp(ttl_score_item / self.ssl_temp).sum(dim=1)
-        proto_nce_loss_item = -torch.log(pos_score_item / ttl_score_item).sum()
-
-        proto_nce_loss = self.proto_reg * (proto_nce_loss_user + proto_nce_loss_item)
-        return proto_nce_loss
 
     def neighbor_loss(self, node_embedding, user, item):
 
@@ -257,7 +230,7 @@ class DNCL(GeneralRecommender):
         ttl_score_item = torch.exp(ttl_score_item / self.ssl_temp).sum(dim=1)
         proto_nce_loss_item = -torch.log(pos_score_item / ttl_score_item).sum()
 
-        proto_nce_loss = self.proto_reg * (proto_nce_loss_user +  self.alpha * proto_nce_loss_item)
+        proto_nce_loss = self.proto_reg * (proto_nce_loss_user + self.beta * proto_nce_loss_item)
         return proto_nce_loss
 
     def ssl_layer_loss(self, current_embedding, previous_embedding, user, item):

@@ -29,6 +29,11 @@ def run_single_model(args):
     if args.alpha is not None:
         config['alpha'] = args.alpha
         config['train_type'].append('alpha')
+
+    if args.beta is not None:
+        config['beta'] = args.beta
+        config['train_type'].append('beta')
+
     if args.ssl_temp is not None:
         config['ssl_temp'] = args.ssl_temp
         config['train_type'].append('ssl_temp')
@@ -76,6 +81,7 @@ if __name__ == '__main__':
     parser.add_argument('--config', type=str, default='', help='External config file name.')
     parser.add_argument('--loss_type', type=int, default=2, help='type 0 : ssl, type 1 : neighbor, type 2 : all')
     parser.add_argument('--alpha', type=float, help='Coefficient alpha between 2 losses of structure loss.')
+    parser.add_argument('--beta', type=float, help='Coefficient beta between 2 losses of nearest loss.')
     parser.add_argument('--ssl_temp', type=float, help='Temperature')
     parser.add_argument('--epochs', type=int, help='Epochs')
     parser.add_argument('--proto_reg', type=str, help='proto_reg')
