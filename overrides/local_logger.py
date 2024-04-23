@@ -60,24 +60,6 @@ def init_logger(config):
     """
     init(autoreset=True)
 
-
-    # base_log_dir = "../log"
-    # if not os.path.exists(base_log_dir):
-    #     print("not exist base_log_dir")
-    #     os.mkdir(base_log_dir)
-    #
-    # # # Ensure the base log directory exists
-    # # base_log_dir = "../log"
-    # # if not os.path.exists(base_log_dir):
-    # #     os.mkdir(base_log_dir)
-    #
-    #
-    # LOGROOT = "../log/" + config['dataset'] + "/"
-    # if not os.path.exists(LOGROOT):
-    #     os.mkdir(LOGROOT)
-
-    import os
-
     # Ensure the base log directory exists
     base_log_dir = "./logs"
     if not os.path.exists(base_log_dir):
