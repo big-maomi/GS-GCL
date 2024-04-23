@@ -23,6 +23,9 @@ cudatoolkit==10.1
 
 ```bash
 python main.py --dataset ml-1m
+# When downloading the dataset for the first time, an error occurs, 
+# but it resolves afterward, and re-entering the command works fine.
+python main.py --dataset ml-1m
 ```
 
 You can replace `ml-1m` to `yelp`, `amazon-books`, `gowalla-merged` to reproduce the results reported in our paper.
