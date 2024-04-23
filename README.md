@@ -4,7 +4,6 @@
 
 We propose a contrastive learning paradigm, named General-Special Neighborhood-enrhanced Contrastive Learning (**GS-GCL**), to explicitly capture potential node relatedness into contrastive learning for graph collaborative filtering.
 
-Yang Zezheng proposed this model
 
 
 ## Requirements
