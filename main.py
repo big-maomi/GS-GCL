@@ -91,7 +91,7 @@ if __name__ == '__main__':
     # Config files
     args.config_file_list = [
         'properties/overall.yaml',
-        'properties/NCL.yaml'
+        'properties/GS_GCL.yaml'
     ]
 
     if args.dataset in ['ml-1m', 'yelp', 'amazon-books', 'gowalla-merged', 'alibaba']:
