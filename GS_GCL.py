@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 r"""
-NCL
+GS-GCL
 ################################################
 Reference:
-    Zihan Lin*, Changxin Tian*, Yupeng Hou*, Wayne Xin Zhao. "Improving Graph Collaborative Filtering with Neighborhood-enriched Contrastive Learning." in WWW 2022.
+    Tommy Yang. "General-Special Neighborhood-Enhanced Graph Contrastive Learning for Recommendation." in 2023 5th International Conference on Machine Learning, Big Data and Business Intelligence (MLBDBI).
 """
 import os
 import time
