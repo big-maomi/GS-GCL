@@ -19,11 +19,11 @@ from recbole.model.loss import BPRLoss, EmbLoss
 from recbole.utils import InputType
 
 
-class DNCL(GeneralRecommender):
+class GS_GCL(GeneralRecommender):
     input_type = InputType.PAIRWISE
 
     def __init__(self, config, dataset):
-        super(DNCL, self).__init__(config, dataset)
+        super(GS_GCL, self).__init__(config, dataset)
 
         # load dataset info
         self.interaction_matrix = dataset.inter_matrix(form='coo').astype(np.float32)

@@ -6,14 +6,14 @@ from recbole.data import create_dataset, data_preparation
 from recbole.utils import init_seed, set_color
 from local_logger import init_logger
 
-from dncl import DNCL
+from GS_GCL import GS_GCL
 from trainer import NCLTrainer
 
 
 def run_single_model(args):
     # configurations initialization
     config = Config(
-        model=DNCL,
+        model=GS_GCL,
         dataset=args.dataset, 
         config_file_list=args.config_file_list
     )
@@ -58,7 +58,7 @@ def run_single_model(args):
     train_data, valid_data, test_data = data_preparation(config, dataset)
 
     # model loading and initialization
-    model = DNCL(config, train_data.dataset).to(config['device'])
+    model = GS_GCL(config, train_data.dataset).to(config['device'])
     logger.info(model)
 
     # trainer loading and initialization
