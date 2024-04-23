@@ -6,7 +6,7 @@ from tqdm import tqdm
 from recbole.trainer import Trainer
 from recbole.utils import early_stopping, dict2str, set_color, get_gpu_usage
 import os
-import override.local_logger
+from overrides import local_logger
 
 
 class GS_GCLTrainer(Trainer):

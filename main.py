@@ -4,10 +4,10 @@ from logging import getLogger
 from recbole.config import Config
 from recbole.data import create_dataset, data_preparation
 from recbole.utils import init_seed, set_color
-from override.local_logger import init_logger
+from overrides.local_logger import init_logger
 
 from GS_GCL import GS_GCL
-from override.trainer import GS_GCLTrainer
+from overrides.trainer import GS_GCLTrainer
 
 
 def run_single_model(args):
@@ -62,7 +62,7 @@ def run_single_model(args):
     logger.info(model)
 
     # trainer loading and initialization
-    trainer = NCLTrainer(config, model)
+    trainer = GS_GCLTrainer(config, model)
 
     # model training
     best_valid_score, best_valid_result = trainer.fit(

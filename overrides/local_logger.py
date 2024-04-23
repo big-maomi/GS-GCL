@@ -1,17 +1,4 @@
-# -*- coding: utf-8 -*-
-# @Time   : 2020/8/7
-# @Author : Zihan Lin
-# @Email  : linzihan.super@foxmail.com
 
-# UPDATE
-# @Time   : 2021/3/7
-# @Author : Jiawei Guan
-# @Email  : guanjw@ruc.edu.cn
-
-# UPDATE:
-# @Time   : 2022/07/10
-# @Author : Junjie Zhang
-# @Email  : zjj001128@163.com
 
 """
 recbole.utils.logger
@@ -72,7 +59,32 @@ def init_logger(config):
         >>> logger.info(train_result)
     """
     init(autoreset=True)
-    LOGROOT = "./log/" + config['dataset'] + "/"
+
+
+    # base_log_dir = "../log"
+    # if not os.path.exists(base_log_dir):
+    #     print("not exist base_log_dir")
+    #     os.mkdir(base_log_dir)
+    #
+    # # # Ensure the base log directory exists
+    # # base_log_dir = "../log"
+    # # if not os.path.exists(base_log_dir):
+    # #     os.mkdir(base_log_dir)
+    #
+    #
+    # LOGROOT = "../log/" + config['dataset'] + "/"
+    # if not os.path.exists(LOGROOT):
+    #     os.mkdir(LOGROOT)
+
+    import os
+
+    # Ensure the base log directory exists
+    base_log_dir = "./logs"
+    if not os.path.exists(base_log_dir):
+        os.mkdir(base_log_dir)
+
+    # Create a dataset-specific log directory
+    LOGROOT = os.path.join(base_log_dir, config['dataset'])
     if not os.path.exists(LOGROOT):
         os.mkdir(LOGROOT)
 
@@ -156,3 +168,14 @@ def get_model_file_name_without_dir(config):
             config["dataset"], info, get_local_time(), md5
         )
     return logfilename
+
+if __name__ == '__main__':
+    # if not os.path.exists("../log"):
+    #     print("not exist")
+    #     os.mkdir("../log")
+
+
+    base_log_dir = "../log"
+    if not os.path.exists(base_log_dir):
+        print("not exist base_log_dir")
+        os.mkdir(base_log_dir)
