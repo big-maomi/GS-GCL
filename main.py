@@ -4,10 +4,10 @@ from logging import getLogger
 from recbole.config import Config
 from recbole.data import create_dataset, data_preparation
 from recbole.utils import init_seed, set_color
-from local_logger import init_logger
+from override.local_logger import init_logger
 
 from GS_GCL import GS_GCL
-from trainer import NCLTrainer
+from override.trainer import GS_GCLTrainer
 
 
 def run_single_model(args):
