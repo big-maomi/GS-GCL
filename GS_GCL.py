@@ -25,17 +25,16 @@ class GS_GCL(GeneralRecommender):
     def __init__(self, config, dataset):
         super(GS_GCL, self).__init__(config, dataset)
 
-        # load dataset info
+        # Load dataset information
         self.interaction_matrix = dataset.inter_matrix(form='coo').astype(np.float32)
-
         self.dataset_name = dataset.dataset_name
-        self.user_neighbor = self.getRowNeighbors(self.interaction_matrix).long().to(self.device)
-        self.item_neighbor = self.getColNeighbors(self.interaction_matrix).long().to(self.device)
+        self.user_neighbor = self.get_row_neighbors(self.interaction_matrix).long().to(self.device)
+        self.item_neighbor = self.get_col_neighbors(self.interaction_matrix).long().to(self.device)
 
-        # load parameters info
-        self.latent_dim = config['embedding_size']  # int type: the embedding size of the base model
-        self.n_layers = config['n_layers']          # int type: the layer num of the base model
-        self.reg_weight = config['reg_weight']      # float32 type: the weight decay for l2 normalization
+        # Load configuration parameters
+        self.latent_dim = config['embedding_size']  # Embedding size
+        self.n_layers = config['n_layers']  # Number of layers in the model
+        self.reg_weight = config['reg_weight']  # L2 regularization weight
 
         self.ssl_temp = config['ssl_temp']
         self.ssl_reg = config['ssl_reg']
@@ -47,7 +46,7 @@ class GS_GCL(GeneralRecommender):
         self.proto_reg = config['proto_reg']
         self.k = config['num_clusters']
 
-        # define layers and loss
+        # Define model layers and loss functions
         self.user_embedding = torch.nn.Embedding(num_embeddings=self.n_users, embedding_dim=self.latent_dim)
         self.item_embedding = torch.nn.Embedding(num_embeddings=self.n_items, embedding_dim=self.latent_dim)
 
@@ -55,85 +54,64 @@ class GS_GCL(GeneralRecommender):
         self.mf_loss = BPRLoss()
         self.reg_loss = EmbLoss()
 
-        # storage variables for full sort evaluation acceleration
+        # Variables for accelerating full sort evaluation
         self.restore_user_e = None
         self.restore_item_e = None
 
         self.norm_adj_mat = self.get_norm_adj_mat().to(self.device)
 
-        # parameters initialization
+        # Initialize model parameters
         self.apply(xavier_uniform_initialization)
         self.other_parameter_name = ['restore_user_e', 'restore_item_e']
 
+    def get_row_neighbors(self, matrix):
+        file_name = f"neighbors/{self.dataset_name}-row.txt"
+        if os.path.exists(file_name):
+            print("Loading row neighbors...")
+            with open(file_name, 'r') as f:
+                neighbors = [int(line.rstrip('\n')) for line in f]
+            return torch.tensor(neighbors).long()
 
-    def getRowNeighbors(self,matrix):
-        fileName = "neighbors/" + self.dataset_name + "-row.txt"
-        if(os.path.exists(fileName)):
-            print("loading row neighbor")
-            with open(fileName, 'r') as f:
-                score = [int(line.rstrip('\n')) for line in f]
-            score = torch.Tensor(score).long()
-            return score
-
-        print("calculate row neighbor....")
+        print("Calculating row neighbors...")
         neighbors = [0]
-
         row_sum = np.sqrt(matrix.sum(1)) + 1e-4
-
         start = time.time()
-        for i in range(1,matrix.shape[0]):
+        for i in range(1, matrix.shape[0]):
             row_i = matrix.getrow(i)
-            cosList = matrix.dot(row_i.transpose())
-            cosList = cosList.__div__(row_sum)
-            cosList[i][0] = 0
-            res = cosList.argmax(0).item()
-            neighbors.append(res)
-        end = time.time()
-        print("cal row neighbor cost time: " +  str(end-start))
-        with open(fileName, 'w') as f:
-            for s in neighbors:
-                f.write(str(s) + '\n')
-        neighbors = torch.Tensor(neighbors)
+            cos_list = matrix.dot(row_i.transpose()) / row_sum
+            cos_list[i, 0] = 0
+            neighbors.append(cos_list.argmax(0).item())
+        print(f"Row neighbor calculation time: {time.time() - start}s")
 
+        with open(file_name, 'w') as f:
+            for neighbor in neighbors:
+                f.write(f"{neighbor}\n")
+        return torch.tensor(neighbors).long()
 
-        print("saving row neighbor")
+    def get_col_neighbors(self, matrix):
+        file_name = f"neighbors/{self.dataset_name}-col.txt"
+        if os.path.exists(file_name):
+            print("Loading column neighbors...")
+            with open(file_name, 'r') as f:
+                neighbors = [int(line.rstrip('\n')) for line in f]
+            return torch.tensor(neighbors).long()
 
-        return neighbors
-
-    def getColNeighbors(self,matrix):
-        fileName = "neighbors/" + self.dataset_name + "-col.txt"
-
-        if(os.path.exists(fileName)):
-            print("loading col neighbor")
-            with open(fileName, 'r') as f:
-                score = [int(line.rstrip('\n')) for line in f]
-            score = torch.Tensor(score).long()
-            return score
-        print("calculate col neighbor....")
+        print("Calculating column neighbors...")
         neighbors = [0]
         col_sum = np.sqrt(matrix.sum(0)) + 1e-4
         start = time.time()
-        for i in range(1,matrix.shape[1]):
+        for i in range(1, matrix.shape[1]):
             col_i = matrix.getcol(i)
-            cosList = col_i.transpose().dot(matrix)
-            cosList = cosList.__div__(col_sum)
-            cosList = cosList.transpose()
-            cosList[i][0] = 0
-            res = cosList.argmax(0).item()
-            neighbors.append(res)
-        end = time.time()
-        print("cal col neighbor cost time: " + str(end - start))
-        with open(fileName, 'w') as f:
-            for s in neighbors:
-                f.write(str(s) + '\n')
-        neighbors = torch.Tensor(neighbors)
+            cos_list = col_i.transpose().dot(matrix) / col_sum
+            cos_list = cos_list.transpose()
+            cos_list[i, 0] = 0
+            neighbors.append(cos_list.argmax(0).item())
+        print(f"Column neighbor calculation time: {time.time() - start}s")
 
-        print("saving col neighbor")
-
-        return neighbors;
-
-
-
+        with open(file_name, 'w') as f:
+            for neighbor in neighbors:
+                f.write(f"{neighbor}\n")
+        return torch.tensor(neighbors).long()
 
     def get_norm_adj_mat(self):
         r"""Get the normalized interaction matrix of users and items.
