@@ -6,7 +6,6 @@ item_inter_num_interval: "[0,inf)"
 val_interval:
   rating: "[3,inf)"
 
-train_batch_size: 8192
 reg_weight: 1e-4
 ssl_temp: 0.1
 ssl_reg: 1e-7

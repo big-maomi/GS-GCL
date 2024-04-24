@@ -163,16 +163,15 @@ class GS_GCL(GeneralRecommender):
     def forward(self):
         all_embeddings = self.get_ego_embeddings()
         embeddings_list = [all_embeddings]
-        for layer_idx in range(max(self.n_layers, self.hyper_layers*2)):
+        for layer_idx in range(max(self.n_layers, self.hyper_layers * 2)):
             all_embeddings = torch.sparse.mm(self.norm_adj_mat, all_embeddings)
             embeddings_list.append(all_embeddings)
 
-        lightgcn_all_embeddings = torch.stack(embeddings_list[:self.n_layers+1], dim=1)
+        lightgcn_all_embeddings = torch.stack(embeddings_list[:self.n_layers + 1], dim=1)
         lightgcn_all_embeddings = torch.mean(lightgcn_all_embeddings, dim=1)
 
         user_all_embeddings, item_all_embeddings = torch.split(lightgcn_all_embeddings, [self.n_users, self.n_items])
         return user_all_embeddings, item_all_embeddings, embeddings_list
-
 
     def neighbor_loss(self, node_embedding, user, item):
 
@@ -181,11 +180,11 @@ class GS_GCL(GeneralRecommender):
         norm_all_user_emb = F.normalize(user_embeddings_all)
         norm_all_item_emb = F.normalize(item_embeddings_all)
 
-        user_embeddings = user_embeddings_all[user]     # [B, e]
+        user_embeddings = user_embeddings_all[user]  # [B, e]
         norm_user_embeddings = F.normalize(user_embeddings)
 
-        userNeighbor = self.user_neighbor[user]     # [B,]
-        user_neighbor_embeddings = user_embeddings_all[userNeighbor]   # [B, e]
+        user_neighbor = self.user_neighbor[user]  # [B,]
+        user_neighbor_embeddings = user_embeddings_all[user_neighbor]  # [B, e]
         norm_user_neighbor_embeddings = F.normalize(user_neighbor_embeddings)
 
         pos_score_user = torch.mul(norm_user_embeddings, norm_user_neighbor_embeddings).sum(dim=1)
@@ -198,8 +197,8 @@ class GS_GCL(GeneralRecommender):
         item_embeddings = item_embeddings_all[item]
         norm_item_embeddings = F.normalize(item_embeddings)
 
-        itemNeighbor = self.item_neighbor[item]     # [B,]
-        item_neighbor_embeddings = item_embeddings_all[itemNeighbor]   # [B, e]
+        item_neighbor = self.item_neighbor[item]  # [B,]
+        item_neighbor_embeddings = item_embeddings_all[item_neighbor]  # [B, e]
         norm_item_neighbor_embeddings = F.normalize(item_neighbor_embeddings)
 
         pos_score_item = torch.mul(norm_item_embeddings, norm_item_neighbor_embeddings).sum(dim=1)
@@ -213,7 +212,8 @@ class GS_GCL(GeneralRecommender):
 
     def ssl_layer_loss(self, current_embedding, previous_embedding, user, item):
         current_user_embeddings, current_item_embeddings = torch.split(current_embedding, [self.n_users, self.n_items])
-        previous_user_embeddings_all, previous_item_embeddings_all = torch.split(previous_embedding, [self.n_users, self.n_items])
+        previous_user_embeddings_all, previous_item_embeddings_all = torch.split(previous_embedding,
+                                                                                 [self.n_users, self.n_items])
 
         current_user_embeddings = current_user_embeddings[user]
         previous_user_embeddings = previous_user_embeddings_all[user]
@@ -284,7 +284,6 @@ class GS_GCL(GeneralRecommender):
 
         return mf_loss + self.reg_weight * reg_loss, ssl_loss
 
-
     def calculate_loss_1(self, interaction):
         # clear the storage variable when training
         if self.restore_user_e is not None or self.restore_item_e is not None:
@@ -317,7 +316,6 @@ class GS_GCL(GeneralRecommender):
         reg_loss = self.reg_loss(u_ego_embeddings, pos_ego_embeddings, neg_ego_embeddings)
 
         return mf_loss + self.reg_weight * reg_loss, neighbor_loss
-
 
     def calculate_loss_2(self, interaction):
         # clear the storage variable when training

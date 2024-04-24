@@ -11,21 +11,23 @@ from overrides.trainer import GS_GCLTrainer
 
 
 def run_single_model(args):
-    # configurations initialization
+    # Initialize configuration from given arguments
     config = Config(
         model=GS_GCL,
-        dataset=args.dataset, 
+        dataset=args.dataset,
         config_file_list=args.config_file_list
     )
+    # Set and log the initial seed for reproducibility
     init_seed(config['seed'], config['reproducibility'])
 
+    # Configure the loss type and training parameters based on arguments
     config['loss_type'] = args.loss_type
-
     config['train_type'] = []
 
     if config['loss_type'] != 2:
         config['train_type'].append('loss_type')
 
+    # Conditionally add training configuration parameters if provided
     if args.alpha is not None:
         config['alpha'] = args.alpha
         config['train_type'].append('alpha')
@@ -41,38 +43,40 @@ def run_single_model(args):
     if args.epochs is not None:
         config['epochs'] = args.epochs
         config['train_type'].append('epochs')
+
     if args.proto_reg is not None:
         config['proto_reg'] = float(args.proto_reg)
         config['train_type'].append('proto_reg')
 
-    # logger initialization
+    # Initialize logging
     init_logger(config)
     logger = getLogger()
     logger.info(config)
 
-    # dataset filtering
+    # Load and log dataset
     dataset = create_dataset(config)
     logger.info(dataset)
 
-    # dataset splitting
+    # Prepare data for training, validation, and testing
     train_data, valid_data, test_data = data_preparation(config, dataset)
 
-    # model loading and initialization
+    # Initialize model and log configuration
     model = GS_GCL(config, train_data.dataset).to(config['device'])
     logger.info(model)
 
-    # trainer loading and initialization
+    # Initialize trainer
     trainer = GS_GCLTrainer(config, model)
 
-    # model training
+    # Execute training process and capture the best validation score
     best_valid_score, best_valid_result = trainer.fit(
         train_data, valid_data, saved=True, show_progress=config['show_progress']
     )
 
-    # model evaluation
+    # Evaluate the model on test data and log the results
     test_result = trainer.evaluate(test_data, load_best_model=True, show_progress=config['show_progress'])
     logger.info(set_color('best valid ', 'yellow') + f': {best_valid_result}')
     logger.info(set_color('test result', 'yellow') + f': {test_result}')
+
 
 
 if __name__ == '__main__':
